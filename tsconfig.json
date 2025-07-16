@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "module": "NodeNext",
+        "target": "es2022",
+        "outDir": "dist",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "allowJs": true,
+        "resolveJsonModule": true,
+        "moduleDetection": "force",
+        "isolatedModules": true,
+        "strict": true,
+        "lib": ["es2022"]
+      },
+    "include": ["src", "src/log/app.log", "src/data/blocked-words.json", "src/types"],
+    "exclude": ["node_modules", "dist"]
+}

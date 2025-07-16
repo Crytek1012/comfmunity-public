@@ -1,0 +1,62 @@
+import { ComponentType, ContainerBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } from "discord.js";
+import { config } from "../../config.js";
+import client from "../../core/client.js";
+import { ErrorHandler } from "../../structures/error-handler.js";
+import { GlobalNetworkEvents } from "../../structures/event.js";
+import { Event } from "../../structures/event.js";
+import { Colors } from "../../utils/util.js";
+import { resolveUrlBuffers } from "../../utils/message.js";
+
+export default new Event(GlobalNetworkEvents.RelayDelete, async (relayMessage) => {
+    if (!config.messageLogsChannelId) return;
+
+    const components: any[] = [];
+
+    const infoContainer = new ContainerBuilder()
+        .setAccentColor(Colors.Red)
+        .addTextDisplayComponents({ type: ComponentType.TextDisplay, content: `### Message Deleted` })
+        .addTextDisplayComponents({ type: ComponentType.TextDisplay, content: `<@${relayMessage.authorId}> (${relayMessage.payload.username} ${relayMessage.authorId})` });
+
+    if (relayMessage.payload.content) infoContainer.addTextDisplayComponents({ type: ComponentType.TextDisplay, content: `**Content**\n${relayMessage.payload.content}` });
+
+    const mediaGallery = relayMessage.payload.attachments ?
+        new MediaGalleryBuilder()
+            .addItems(
+                ...relayMessage.payload.attachments.map(url => {
+                    return new MediaGalleryItemBuilder()
+                        .setURL(url)
+                })
+            )
+        : null;
+
+    const resolvedFiles = relayMessage.payload.files ? await resolveUrlBuffers(relayMessage.payload.files) : null;
+    const fileBuilder = resolvedFiles?.map((file, i) => new FileBuilder({
+        file: {
+            url: `attachment://${file.name}_${i}`
+        },
+        spoiler: file.spoiler
+    }));
+
+    components.push(infoContainer);
+    if (mediaGallery) components.push(mediaGallery);
+    if (fileBuilder) components.push(...fileBuilder);
+
+    const queryFiles = resolvedFiles?.map(file => ({
+        data: Buffer.from(file.data.data),
+        name: file.name,
+    })) as any[];
+
+
+    try {
+        (await client.fetchMessageLogsChannel()).send({
+            components,
+            files: queryFiles,
+            flags: MessageFlags.IsComponentsV2,
+            allowedMentions: { parse: [] }
+        });
+    }
+    catch (err) {
+        ErrorHandler.handle(err, { context: 'relay delete', emitAlert: true });
+    }
+
+});
