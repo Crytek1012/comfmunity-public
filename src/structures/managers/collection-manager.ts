@@ -25,7 +25,7 @@ export const defaultFetchOptions: FetchOptions = {
  * Wrapper for Mongo's Collection that provides built in caching
  */
 export class CollectionManager<T extends Document, C = T> {
-    protected collection: MongoCollection<T>;
+    readonly collection: MongoCollection<T>;
     cache: DiscordCollection<string, C> = new DiscordCollection();
 
     constructor(collection: MongoCollection<T>) {
@@ -36,9 +36,13 @@ export class CollectionManager<T extends Document, C = T> {
                 if (prop in target) {
                     return Reflect.get(target, prop, receiver);
                 }
-                const value = (target.collection as any)[prop];
-                return typeof value === 'function' ? value.bind(target.collection) : value;
-            },
+                if (typeof prop === 'string' && prop in target.collection) {
+                    const key = prop as keyof MongoCollection<T>;
+                    const value = target.collection[key];
+                    return typeof value === 'function' ? value.bind(target.collection) : value;
+                }
+                return undefined;
+            }
         });
     }
 
