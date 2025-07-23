@@ -1,4 +1,4 @@
-import { ComponentType, ContainerBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } from "discord.js";
+import { APIMessageTopLevelComponent, AttachmentBuilder, ComponentType, ContainerBuilder, FileBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, MessageFlags } from "discord.js";
 import { config } from "../../config.js";
 import client from "../../core/client.js";
 import { ErrorHandler } from "../../structures/error-handler.js";
@@ -10,7 +10,7 @@ import { resolveUrlBuffers } from "../../utils/message.js";
 export default new Event(GlobalNetworkEvents.RelayDelete, async (relayMessage) => {
     if (!config.messageLogsChannelId) return;
 
-    const components: any[] = [];
+    const components: APIMessageTopLevelComponent[] = [];
 
     const infoContainer = new ContainerBuilder()
         .setAccentColor(Colors.Red)
@@ -35,17 +35,16 @@ export default new Event(GlobalNetworkEvents.RelayDelete, async (relayMessage) =
             url: `attachment://${file.name}_${i}`
         },
         spoiler: file.spoiler
-    }));
+    }).toJSON()
+    );
 
-    components.push(infoContainer);
-    if (mediaGallery) components.push(mediaGallery);
+    components.push(infoContainer.toJSON());
+    if (mediaGallery) components.push(mediaGallery.toJSON());
     if (fileBuilder) components.push(...fileBuilder);
 
-    const queryFiles = resolvedFiles?.map(file => ({
-        data: Buffer.from(file.data.data),
-        name: file.name,
-    })) as any[];
-
+    const queryFiles = resolvedFiles?.map(file =>
+        new AttachmentBuilder(Buffer.from(file.data.data)).setName(file.name)
+    ) ?? [];
 
     try {
         (await client.fetchMessageLogsChannel()).send({
@@ -56,7 +55,7 @@ export default new Event(GlobalNetworkEvents.RelayDelete, async (relayMessage) =
         });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'relay delete', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'relay-delete-event', emitAlert: true });
     }
 
 });

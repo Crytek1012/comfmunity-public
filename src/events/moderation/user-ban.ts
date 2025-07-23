@@ -18,7 +18,7 @@ export default new Event(GlobalNetworkEvents.UserBan, async (user, authority, ba
             { name: 'ID', value: user.id },
             { name: 'Authority', value: `${authority.user?.displayName || authority.username} (${authority.userId})` },
             { name: 'Duration', value: banExpirationDate },
-            { name: 'Reason', value: banData.reason || '\`None Provided.\`' }
+            { name: 'Reason', value: banData.reason || '`None Provided.`' }
         )
 
     try {
@@ -26,6 +26,6 @@ export default new Event(GlobalNetworkEvents.UserBan, async (user, authority, ba
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'User Ban Event' })
+        ErrorHandler.handle(err, { context: 'user-ban-event' })
     }
 })

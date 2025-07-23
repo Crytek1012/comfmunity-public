@@ -1,4 +1,4 @@
-import { EmbedBuilder, MessageFlags, StringSelectMenuInteraction } from "discord.js";
+import { APIMessageTopLevelComponent, EmbedBuilder, MessageFlags, StringSelectMenuInteraction } from "discord.js";
 import database from "../../core/database.js";
 import client from "../../core/client.js";
 import { capitalizeString, Colors, MAX_HELP_MENU_ITEMS } from "../../utils/util.js";
@@ -33,13 +33,13 @@ export async function helpSelectMenuHandler(interaction: StringSelectMenuInterac
         allowedCategories.forEach((c, category) => embed.addFields({ name: capitalizeString(category), value: `${c.size} commands`, inline: true }));
     }
 
-    const components: any[] = [getCategoriesMenu(allowedCategories, targetCategory)];
-    if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${0}_${targetCategory}`));
+    const components: APIMessageTopLevelComponent[] = [getCategoriesMenu(allowedCategories, targetCategory).toJSON()];
+    if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${0}_${targetCategory}`).toJSON());
 
     try {
         return interaction.message.edit({ embeds: [embed], components })
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'interaction create - help command' })
+        ErrorHandler.handle(err, { context: 'help-menu-interaction' })
     }
 }

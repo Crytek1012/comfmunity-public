@@ -12,12 +12,12 @@ export const userUnbanInterval = async () => {
         try {
             await database.bans.delete(ban.userId);
 
-            const user = await client.users.fetch(ban.userId).catch(err => null);
-            const authority = await database.authorities.fetch(ban.authorityId).catch(err => null);
+            const user = await client.users.fetch(ban.userId).catch(() => null);
+            const authority = await database.authorities.fetch(ban.authorityId).catch(() => null);
             client.emit(GlobalNetworkEvents.UserUnban, user, authority, ban)
         }
         catch (err) {
-            ErrorHandler.handle(err, { context: 'Unban Interval' });
+            ErrorHandler.handle(err, { context: 'unban-interval' });
         }
     }
 }

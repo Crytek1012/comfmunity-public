@@ -25,6 +25,6 @@ export default new Event(GlobalNetworkEvents.ConnectionDestroy, async (connectio
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'Connection Destroy Event', connection })
+        ErrorHandler.handle(err, { context: 'connection-destroy-event', connection })
     }
 })

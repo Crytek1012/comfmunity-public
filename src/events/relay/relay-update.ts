@@ -31,7 +31,7 @@ export default new Event(GlobalNetworkEvents.RelayUpdate, async (oldRelayMessage
         });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'relay update', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'relay-update-event', emitAlert: true });
     }
 
 });
