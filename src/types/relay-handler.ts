@@ -1,4 +1,4 @@
-import { Collection, TextDisplayBuilder, TopLevelComponent } from "discord.js";
+import { Collection, TextDisplayBuilder } from "discord.js";
 import { RelayMessageReferences } from "../structures/relay.js";
 
 export interface AttachmentBuffer {
