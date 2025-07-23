@@ -14,7 +14,7 @@ export default new Command({
     requiredPermissions: [PermissionFlagsBits.ManageWebhooks, PermissionFlagsBits.ManageChannels],
     requiredAuthority: AuthorityLevel.Admin,
     position: 1,
-    async execute(message, args) {
+    async execute(message) {
 
         const isConnected = database.connections.cache.get(message.guild.id);
         if (isConnected) return message.reply({ content: 'This server is already connected!' });

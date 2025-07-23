@@ -156,7 +156,7 @@ export const getReferenceButton = (references: RelayPayloadReferenceData, channe
  * @returns 
  */
 export const createReferenceButton = (username: string, url: string) => {
-    return new ActionRowBuilder()
+    return new ActionRowBuilder<ButtonBuilder>()
         .addComponents(
             new ButtonBuilder()
                 .setStyle(ButtonStyle.Link)
@@ -241,7 +241,7 @@ export const resolveAttachments = async (attachments: Attachment[] | Collection<
                 spoiler: attachment.spoiler
             };
         } catch (err) {
-            ErrorHandler.handle(err as Error, { context: 'resolveAttachments', emitAlert: true });
+            ErrorHandler.handle(err, { context: 'resolveAttachments', emitAlert: true });
             return null;
         }
     })
@@ -269,7 +269,7 @@ export const resolveUrlBuffers = async (urls: string[]) => {
             }
 
         } catch (err) {
-            ErrorHandler.handle(err as Error, { context: 'resolveUrlBuffers', emitAlert: true });
+            ErrorHandler.handle(err, { context: 'resolveUrlBuffers', emitAlert: true });
             return null;
         }
     });
@@ -284,9 +284,9 @@ export const resolveUrlBuffers = async (urls: string[]) => {
  * @param options 
  * @returns 
  */
-export const getFirstMention = async (message: any, options: { referenceId?: string; ignoreReference?: boolean }) => {
+export const getFirstMention = async (message: Message, options: { referenceId?: string; ignoreReference?: boolean }) => {
     if (!options.ignoreReference && options.referenceId) {
-        const relayMessage = await database.relays.fetch(options.referenceId).catch((err: Error) => null);
+        const relayMessage = await database.relays.fetch(options.referenceId).catch(() => null);
         if (!relayMessage) return null;
 
         return await client.users.fetch(relayMessage.authorId);

@@ -14,7 +14,7 @@ export default new Command({
     requiredAuthority: AuthorityLevel.Moderator,
     requireConnection: true,
     position: 1,
-    async execute(message, args, connection) {
+    async execute(message) {
         if (!message.reference || !message.reference.messageId) return message.reply({ content: this.formatUsage() });
 
         const relayMessage = await database.relays.fetch(message.reference.messageId);
@@ -26,8 +26,8 @@ export default new Command({
             await database.relays.delete(relayMessage.id);
 
             // delete origin
-            const origin = await relayMessage.fetchOrigin().catch(err => null);
-            if (origin) origin.delete().catch(err => null);
+            const origin = await relayMessage.fetchOrigin().catch(() => null);
+            if (origin) origin.delete().catch(() => null);
 
             const executorAuthority = await database.authorities.fetch(message.author.id); // will be available in this context.
             client.emit(GlobalNetworkEvents.RelayPurge, relayMessage, executorAuthority!)

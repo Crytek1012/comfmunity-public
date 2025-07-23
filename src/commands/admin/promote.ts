@@ -17,7 +17,7 @@ export default new Command({
         const [userId, level] = args;
         if (!isSnowflake(userId)) return message.reply({ content: 'The ID provided is invalid.' });
 
-        const user = await client.users.fetch(userId).catch(err => null);
+        const user = await client.users.fetch(userId).catch(() => null);
         if (!user) return message.reply({ content: 'No user found with that ID.' });
 
         const targetLevel = AuthorityLevelMap[level];

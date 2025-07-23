@@ -17,10 +17,10 @@ export class Task<T = void> {
     isExecuting: boolean = false;
     private readonly operation: () => Promise<T>;
     private resolve!: (value: T) => void;
-    private reject!: (reason?: any) => void;
+    private reject!: (reason?: unknown) => void;
     promise: Promise<T>;
 
-    constructor(id: string, priority: GlobalRelayPriority, task: () => Promise<any>) {
+    constructor(id: string, priority: GlobalRelayPriority, task: () => Promise<T>) {
         this.id = id;
         this.priority = priority;
         this.operation = task;
@@ -60,6 +60,7 @@ export class Task<T = void> {
     }
 }
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 export class Queue {
     private taskMap: Map<string, Map<GlobalRelayPriority, Task<any>>>;
     private queue: Heap<Task<any>>;

@@ -31,12 +31,12 @@ export default new Command({
 
         try {
             const oldConnection = new Connection(connection);
-            const oldWebhook = await oldConnection.fetchWebhook().catch(err => null);
+            const oldWebhook = await oldConnection.fetchWebhook().catch(() => null);
 
             const newWebhook = await client.createChannelWebhook(targetChannel);
             await database.connections.updateChannelData(targetChannel.guild.id, targetChannel, newWebhook);
 
-            if (oldWebhook) oldWebhook.delete(`Connection channel moved to ${targetChannel.name}`).catch(err => null);
+            if (oldWebhook) oldWebhook.delete(`Connection channel moved to ${targetChannel.name}`).catch(() => null);
 
             const executorAuthority = await database.authorities.fetch(message.author.id); // available in this context
             client.emit(GlobalNetworkEvents.ConnectionUpdate, oldConnection, connection, executorAuthority!);

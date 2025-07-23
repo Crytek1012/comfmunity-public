@@ -22,7 +22,7 @@ export default new Command({
 
             if (connection.managedBy === args[1]) return message.reply({ content: 'The connection is already managed by that user.' });
 
-            const user = await client.users.fetch(args[1]).catch(err => null);
+            const user = await client.users.fetch(args[1]).catch(() => null);
             if (!user) return message.reply({ content: 'I could not find a user with that ID.' });
 
             await database.connections.updateManager(connection.guildId, user.id);

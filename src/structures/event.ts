@@ -1,4 +1,4 @@
-import { ClientEvents, Message, Snowflake, User } from "discord.js";
+import { ClientEvents, User } from "discord.js";
 import { Connection } from "../structures/connection.js";
 import { Authority } from "../structures/authority.js";
 import { RelayMessage } from "../structures/relay.js";
@@ -59,6 +59,6 @@ export interface IComfmunityEvents extends ClientEvents {
 export class Event<Key extends keyof IComfmunityEvents> {
     constructor(
         public event: Key,
-        public run: (...args: IComfmunityEvents[Key]) => any
+        public run: (...args: IComfmunityEvents[Key]) => unknown
     ) { }
 }
