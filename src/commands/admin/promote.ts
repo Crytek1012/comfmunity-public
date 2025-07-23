@@ -10,11 +10,11 @@ export default new Command({
     description: 'Promote a user to an authority',
     usage: `!promote [ user ID ] [ ${AssignableAuthorityLevels.join(' | ')} ]`,
     requiredAuthority: AuthorityLevel.Owner,
-    requiredArgs: 2,
+    requiredArgs: 1,
     position: 1,
     async execute(message, args) {
 
-        const [userId, level] = args;
+        const [userId, level = AssignableAuthorityLevels[0]] = args;
         if (!isSnowflake(userId)) return message.reply({ content: 'The ID provided is invalid.' });
 
         const user = await client.users.fetch(userId).catch(() => null);
@@ -25,7 +25,7 @@ export default new Command({
         if (targetLevel > AuthorityLevel.Admin) return message.reply({ content: 'The level you are trying to assign is above the maximum assignable level.' });
 
         const targetAuthority = await database.authorities.fetch(userId);
-        if (targetAuthority?.level === targetLevel) return message.reply({ content: 'This authority already has that authority level.' });
+        if (targetAuthority?.level === targetLevel) return message.reply({ content: 'This authority already has that level.' });
         if ((targetAuthority?.level || 0) > targetLevel) return message.reply({ content: 'This authority has a higher level than the one provided.' });
 
         try {
