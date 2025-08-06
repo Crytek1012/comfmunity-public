@@ -8,243 +8,217 @@ export enum GlobalRelayPriority {
     Delete,
     ModDelete
 }
+type TaskOperation<T> = () => T | Promise<T>;
 
-export class Task<T = void> {
-    static counter = 0;
-    order: number;
-    id: string;
-    priority: GlobalRelayPriority;
-    isExecuting: boolean = false;
-    private readonly operation: () => Promise<T>;
-    private resolve!: (value: T) => void;
-    private reject!: (reason?: any) => void;
-    promise: Promise<T>;
+class Task<T = void> {
+    readonly id: string;
+    readonly priority: GlobalRelayPriority;
+    operation: () => T | Promise<T>;
+    private static _number = 0;
+    readonly number: number;
+    resolve!: (value: T | PromiseLike<T>) => void;
+    reject!: (reason?: unknown) => void;
+    readonly promise: Promise<T>;
 
-    constructor(id: string, priority: GlobalRelayPriority, task: () => Promise<any>) {
+    constructor(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>, dependsOnTask?: string) {
         this.id = id;
         this.priority = priority;
-        this.operation = task;
-        this.order = Task.counter++;
+        this.operation = operation;
+        this.number = Task._number++;
         this.promise = new Promise<T>((res, rej) => {
             this.resolve = res;
             this.reject = rej;
         });
     }
 
-    async _run(): Promise<T> {
-        this.isExecuting = true;
-        try {
-            const result = await this.operation();
-            this.resolve(result);
-            return result;
-        } catch (err) {
-            this.reject(err);
-            throw err;
-        }
+    isRelayPOST() {
+        return this.priority === GlobalRelayPriority.PostLowPriority || this.priority === GlobalRelayPriority.PostHighPriority;
     }
 
-    /**
-     * Whether the task aims to delete a relay
-     * @returns
-     */
-    isDeletionOperation() {
-        return this.priority >= GlobalRelayPriority.Delete;
+    isRelayPATCH() {
+        return this.priority === GlobalRelayPriority.Update;
     }
 
-    /**
-     * Whether the task is a relay (sending a message)
-     * @returns 
-     */
-    isRelayOperation() {
-        return (this.priority === GlobalRelayPriority.PostHighPriority) || (this.priority === GlobalRelayPriority.PostLowPriority);
+    isRelayDELETE() {
+        return this.priority === GlobalRelayPriority.Delete || this.priority === GlobalRelayPriority.ModDelete;
     }
 }
 
-export class Queue {
-    private taskMap: Map<string, Map<GlobalRelayPriority, Task<any>>>;
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+class Queue {
+    private tasks: Map<string, Map<GlobalRelayPriority, Task<any>>> = new Map();
     private queue: Heap<Task<any>>;
-    private isRunning = false;
-    private currentTask: Task | null = null;
-    private history: Map<string, GlobalRelayPriority> = new Map();
-    private lastExecutionTime: number = 0;
+    private inProcess = false;
+    private lastExecutionTimestamp: number = 0;
 
     constructor() {
-        this.queue = new Heap((a, b) => {
-            if (a.priority === b.priority) return a.order - b.order;
-            return b.priority - a.priority;
-        });
-        this.taskMap = new Map();
+        this.queue = new Heap((a, b) =>
+            a.priority === b.priority ? a.number - b.number : b.priority - a.priority
+        );
     }
 
     /**
-     * Adds a new task to the queue
+     * Add a task to the queue
+     * @param id 
+     * @param priority 
+     * @param operation 
+     * @param dependsOnTask 
+     * @returns 
+     */
+    async addTask<T>(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>, dependsOnTask?: string): Promise<T> {
+        const task = new Task(id, priority, operation, dependsOnTask);
+
+        // remove redundant tasks
+        const shouldCancelTask = this.redundancyCleaner(task);
+        if (shouldCancelTask) return task.promise;
+
+        if (!this.tasks.has(task.id)) this.tasks.set(task.id, new Map());
+        this.tasks.get(task.id)!.set(task.priority, task);
+
+        this.queue.push(task);
+
+        if (!this.inProcess) this.processTasks();
+
+        return task.promise;
+    }
+
+    /**
+     * Remove a priority task from the queue
      * @param id the ID of the task
      * @param priority the priority of the task
-     * @param operation the task to execute
-     * @returns
-     */
-    addTask<T>(id: string, priority: GlobalRelayPriority, operation: (() => Promise<T>) | Promise<T>): Promise<T> {
-        const op = typeof operation === 'function' ? operation : () => operation;
-        const newTask = new Task<T>(id, priority, op);
-
-        const hasCanceled = this.removeLowerPriorityTasks(newTask.id, newTask.priority);
-        if (hasCanceled) return Promise.resolve(undefined as T);
-
-        if (!this.taskMap.has(newTask.id)) this.taskMap.set(newTask.id, new Map());
-        this.taskMap.get(newTask.id)!.set(newTask.priority, newTask);
-
-        this.queue.push(newTask);
-        if (!this.isRunning) this.processNextTask();
-
-        return newTask.promise;
-    }
-
-    /**
-     * Remove all the task's priorities lower than the provided one
-     * @param id the ID of the task
-     * @param priority The priority to compare to
-     * @returns
-     */
-    removeLowerPriorityTasks(id: string, priority: GlobalRelayPriority) {
-        const tasks = this.getTask(id);
-        if (!tasks) return false;
-
-        let currentPriority = GlobalRelayPriority.PostLowPriority;
-        let removedCount = 0;
-        while (currentPriority <= priority) {
-            if (tasks.has(currentPriority)) removedCount += 1;
-            this.removeTask(id, currentPriority);
-
-            currentPriority += 1;
-        }
-        return removedCount ? true : false;
-    }
-
-    /**
-     * Dequeues a task from the taskMap
-     * @param task the task to dequeue on
-     * @returns 
-     */
-    private dequeueMapTask(task: Task) {
-        const result = this.taskMap.get(task.id);
-        if (!result) return;
-
-        result.delete(task.priority);
-        if (result.size === 0) this.taskMap.delete(task.id);
-    }
-
-    /**
-     * Removes and returns the next task in the queue
-     * @returns 
-     */
-    private getNextTask() {
-        const task = this.queue.pop() ?? null;
-        if (task) this.dequeueMapTask(task);
-
-        return task;
-    }
-
-    /**
-     * Removes a priority task from the queue.
-     * @param id the ID of the task
-     * @param priority the priority to remove
      */
     removeTask(id: string, priority: GlobalRelayPriority) {
-        const priorityTask = this.taskMap.get(id)?.get(priority);
-        if (!priorityTask) return false
+        const tasks = this.getTasks(id);
+        if (!tasks) return;
 
-        this.queue.remove(priorityTask);
-        this.dequeueMapTask(priorityTask);
-        return true;
+        tasks.delete(priority);
+        if (tasks.size === 0) this.tasks.delete(id);
     }
 
     /**
-     * Returns a priority task
+     * Remove all the tasks for an ID
+     * @param id the id of the tasks
+     */
+    removeTasks(id: string) {
+        const tasks = this.tasks.get(id);
+        if (!tasks) return;
+        tasks.forEach(t => this.queue.remove(t));
+        this.tasks.delete(id);
+    }
+
+    /**
+     * Whether a task with this priority is queued
      * @param id the ID of the task
      * @param priority the priority of the task
      * @returns 
      */
-    getPriorityTask(id: string, priority: GlobalRelayPriority): Task | undefined {
-        return this.taskMap.get(id)?.get(priority);
+    hasTask(id: string, priority: GlobalRelayPriority) {
+        return !!this.tasks.get(id)?.get(priority);
     }
 
     /**
-     * Returns a task
+     * Whether a task with a lower priority exists
      * @param id the ID of the task
+     * @param priority the priority to compare
      * @returns 
      */
-    getTask(id: string) {
-        return this.taskMap.get(id);
+    hasLowerTasks(id: string, priority: GlobalRelayPriority) {
+        const tasks = this.tasks.get(id);
+        if (!tasks) return false;
+
+        if ([...tasks.values()].some(task => task.priority < priority)) return true;
+
+        return false;
     }
 
     /**
-     * Whether this ID has been queued.
+     * Whether a task has any POST tasks
      * @param id the ID of the task
      * @returns 
      */
-    hasTask(id: string) {
-        return id === this.currentTask?.id || this.taskMap.has(id);
+    hasPostTaskForId(id: string) {
+        const tasks = this.tasks.get(id);
+        if (!tasks) return false;
+        if (tasks.has(GlobalRelayPriority.PostLowPriority) || tasks.has(GlobalRelayPriority.PostHighPriority)) return true;
+        return false;
     }
 
     /**
-     * Checks if a task was queued with the given priority
+     * Get a priority task for an ID
      * @param id the ID of the task
-     * @param priority the priority level of the task
+     * @param priority the priority of the task
      * @returns 
      */
-    hasPriorityTask(id: string, priority: GlobalRelayPriority) {
-        if (this.currentTask?.id === id && this.currentTask.priority === priority) return true;
+    getTask(id: string, priority: GlobalRelayPriority) {
+        return this.tasks.get(id)?.get(priority) || null;
+    }
 
-        if (this.getTask(id)?.has(priority)) return true;
-
-        if ((this.history.get(id) || 0) === priority) return true;
-
-        return this.history.get(id) === priority;
+    /**
+     * Get all the tasks for an ID
+     * @param id the ID of the tasks
+     * @returns 
+     */
+    getTasks(id: string) {
+        return this.tasks.get(id) || null;
     }
 
     /**
      * Processes all the tasks in the queue
-     * @returns 
      */
-    private async processNextTask() {
-        if (this.isRunning) return;
-        this.isRunning = true;
+    private async processTasks() {
+        if (this.queue.size() === 0) return;
+        this.inProcess = true;
 
-        while (true) {
-            const task = this.getNextTask();
-            if (!task) break;
-            this.currentTask = task;
-
-            const now = Date.now();
-            const timeSinceLastExecution = now - this.lastExecutionTime;
-            if (timeSinceLastExecution < 1000) {
-                await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastExecution));
-            }
-
-            try {
-                await task._run();
-                this.lastExecutionTime = Date.now();
-            } catch (err) {
-                ErrorHandler.handle(err, { context: 'Queue', emitAlert: true });
-            }
-
-            this.addHistory(task.id, task.priority);
+        const task = this.queue.pop();
+        if (!task) {
+            this.inProcess = false;
+            return;
         }
 
-        this.currentTask = null;
-        this.isRunning = false;
+        this.removeTask(task.id, task.priority);
+
+        // throttle
+        const timeSinceLastExecution = Date.now() - this.lastExecutionTimestamp;
+        if (timeSinceLastExecution < 1000) {
+            await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastExecution));
+        }
+
+        try {
+            const result = await task.operation();
+            this.lastExecutionTimestamp = Date.now();
+            task.resolve(result);
+        } catch (err) {
+            task.reject(err);
+            ErrorHandler.handle(err, { context: 'queue', emitAlert: true });
+        }
+
+        this.inProcess = false;
+        this.processTasks();
     }
 
     /**
-     * Add a task to the history ( max age: 10 )
-     * @param id the ID of the task
-     * @param priority the priority of the task
+     * Remove tasks with lower priority
+     * @param id the ID of the tasks
+     * @param targetPriority the priority target
+     * @returns the tasks removed
      */
-    private addHistory(id: string, priority: GlobalRelayPriority) {
-        this.history.set(id, priority);
-        if (this.history.size > 10) {
-            this.history.delete(this.history.keys().next().value!)
+    private redundancyCleaner<T>(task: Task<T>): boolean {
+        // There is nothing to cancel on POST, and PATCH is depended on the existence of POST.
+        if (task.isRelayPOST() || task.isRelayPATCH()) return false;
+        // if the task was never POSTED cancel all operations
+        if (task.isRelayDELETE() && this.hasPostTaskForId(task.id)) {
+            this.removeTasks(task.id);
+            return true;
         }
+
+        // otherwise remove the lower priority tasks
+        const tasks = this.getTasks(task.id);
+        if (!tasks) return false;
+
+        tasks.forEach(t => {
+            if (t.priority < task.priority) this.removeTask(t.id, t.priority)
+        });
+        return false
     }
 }
 
