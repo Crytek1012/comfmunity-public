@@ -1,4 +1,4 @@
-import { Client, ClientEvents, Collection, Events, GatewayIntentBits, Partials, TextChannel } from "discord.js";
+import { Client, ClientEvents, Events, GatewayIntentBits, Partials, TextChannel } from "discord.js";
 import { readdir } from "fs/promises";
 import database from "./database.js";
 import { Command } from "../structures/command.js";
@@ -22,6 +22,7 @@ class ConnectionClient extends Client {
         event: K,
         ...args: NetworkEvents[K]
     ): boolean {
+        /* eslint-disable  @typescript-eslint/no-explicit-any */
         return super.emit(event as any, ...args);
     }
 
