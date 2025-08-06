@@ -10,6 +10,11 @@ export default new Event(Events.MessageDelete, async (message) => {
     if (!message.inGuild() || message.channel.type !== ChannelType.GuildText) return;
     if (!message.partial && message.author.bot || message.webhookId) return;
 
+    // early return for POSTS not yet processed.
+    if (GlobalRelayQueue.hasPostTaskForId(message.id)) {
+        return GlobalRelayQueue.removeTasks(message.id);
+    }
+
     const connection = await database.connections.fetch(message.guildId, { fetch: false });
     if (!connection || !connection.isEnabled() || !connection.isConnectionChannel(message.channel.id)) return;
 
@@ -20,7 +25,7 @@ export default new Event(Events.MessageDelete, async (message) => {
         const connections = database.connections.cache.filter(c => !c.isConnectionChannel(relayMessage.channelId) && c.isRelayEligible() && relayMessage.references.has(c.channelId!));
         if (connections.size === 0) return;
 
-        await GlobalRelayQueue.addTask(message.id, GlobalRelayPriority.PostLowPriority, RelayHandler.deleteRelay({ messages: relayMessage.references }, connections));
+        await GlobalRelayQueue.addTask(message.id, GlobalRelayPriority.PostLowPriority, () => RelayHandler.deleteRelay({ messages: relayMessage.references }, connections));
     }
     catch (err) {
         ErrorHandler.handle(err, { context: 'message delete', emitAlert: true });
