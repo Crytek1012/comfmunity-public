@@ -1,6 +1,6 @@
 {
   "name": "comfmunity-public",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "license": "ISC",
   "author": "",
@@ -8,6 +8,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node --env-file=.env dist/index.js",
     "build": "npx tsc && npm run dev",
     "start": "npx tsc && node --env-file=.env dist/index.js",
     "lint": "eslint . --ext .js,.ts"
