@@ -26,8 +26,9 @@ export class ErrorHandler {
         try {
             if (err instanceof DiscordAPIError || err instanceof DiscordjsError) await this.handleDiscordError(err, data);
         }
-        catch (innerErr: any) {
-            Logger.error(this.name, innerErr.message, innerErr)
+        catch (innerErr: unknown) {
+            if (innerErr instanceof Error) Logger.error(this.name, innerErr.message, innerErr);
+            else Logger.log(this.name + innerErr);
         }
 
         if (data.emitAlert) await this.emitAlert(err);

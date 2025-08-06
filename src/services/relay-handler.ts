@@ -62,10 +62,10 @@ export default class RelayHandler {
             // reply buttons and user reply have to be managed per connection
             if (data.reference) {
                 const referenceButton = getReferenceButton(data.reference, connection.channelId, connection.guildId, data.reference.authorUsername);
-                if (referenceButton) newBody.components?.push(referenceButton as any);
+                if (referenceButton) newBody.components?.push(referenceButton.toJSON());
 
                 // add mention container at the top
-                if (isReferenceGuild) newBody.components?.unshift(data.reference.mention.container as any)
+                if (isReferenceGuild) newBody.components?.unshift(data.reference.mention.container.toJSON())
             }
 
             try {
@@ -107,10 +107,10 @@ export default class RelayHandler {
             // reply buttons and user mention have to be managed per connection
             if (data.reference) {
                 const referenceButton = getReferenceButton(data.reference, connection.channelId, connection.guildId, data.reference.authorUsername);
-                if (referenceButton) newBody.components?.push(referenceButton as any);
+                if (referenceButton) newBody.components?.push(referenceButton.toJSON());
 
                 // add mention container at the top
-                if (isReferenceGuild) newBody.components?.unshift(data.reference.mention.container as any)
+                if (isReferenceGuild) newBody.components?.unshift(data.reference.mention.container.toJSON())
             }
 
             try {

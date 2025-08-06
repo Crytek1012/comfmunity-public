@@ -25,6 +25,6 @@ export default new Event(GlobalNetworkEvents.ConnectionDelete, async (connection
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'Connection Delete Event', connection })
+        ErrorHandler.handle(err, { context: 'connection-delete-event', connection })
     }
 })

@@ -18,10 +18,10 @@ export default new Command({
         const relayMessage = await database.relays.fetch(messageId!);
         if (!relayMessage) return message.reply({ content: 'I could not find a global message with that ID.' });
 
-        const guild = await relayMessage.fetchGuild().catch(err => null);
+        const guild = await relayMessage.fetchGuild().catch(() => null);
         const guildInfo = guild ? `${guild.name} - ${guild.id}` : 'Unknown Guild.'
 
-        const user = await relayMessage.fetchAuthor().catch(err => null);
+        const user = await relayMessage.fetchAuthor().catch(() => null);
         const userInfo = `<@${relayMessage.authorId}> (${user?.username || 'unknown'})`;
 
         const authority = await database.authorities.fetch(relayMessage.authorId);

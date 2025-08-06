@@ -1,10 +1,9 @@
-import { EmbedBuilder } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 import { Event } from "../../structures/event.js";
 import { GlobalNetworkEvents } from "../../structures/event.js";
 import { Colors } from "../../utils/util.js";
 import client from "../../core/client.js";
 import { config } from "../../config.js";
-import { TextChannel } from "discord.js";
 import { ErrorHandler } from "../../structures/error-handler.js";
 
 export default new Event(GlobalNetworkEvents.ConnectionCreate, async (connection, authority) => {
@@ -25,6 +24,6 @@ export default new Event(GlobalNetworkEvents.ConnectionCreate, async (connection
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'Connection Create Event', connection })
+        ErrorHandler.handle(err, { context: 'connection-create-event', connection })
     }
 })

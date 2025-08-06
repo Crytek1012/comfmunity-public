@@ -1,4 +1,4 @@
-import { ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
+import { APIMessageTopLevelComponent, ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
 import database from "../../core/database.js";
 import client from "../../core/client.js";
 import { capitalizeString, Colors, MAX_HELP_MENU_ITEMS } from "../../utils/util.js";
@@ -8,7 +8,7 @@ import { createNavigationRow, getCategoriesMenu } from "../../utils/buttons.js";
 export async function helpButtonHandler(interaction: ButtonInteraction) {
     await interaction.deferUpdate({ withResponse: true });
 
-    const [name, action, index, targetCategory] = interaction.customId.split('_');
+    const [, action, index, targetCategory] = interaction.customId.split('_');
     const executorAuthority = await database.authorities.fetch(interaction.user.id);
 
     const targetCategoryCommands = client.commands.getCategoryCommands(targetCategory, (c => c.requiredAuthority <= (executorAuthority?.level || 0)));
@@ -31,14 +31,14 @@ export async function helpButtonHandler(interaction: ButtonInteraction) {
         .setDescription(displayableCommands)
 
     const allowedCategories = client.commands.getCategories(executorAuthority?.level)
-    const components: any[] = [getCategoriesMenu(allowedCategories, targetCategory)];
-    if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${newIndex}_${targetCategory}`));
+    const components: APIMessageTopLevelComponent[] = [getCategoriesMenu(allowedCategories, targetCategory).toJSON()];
+    if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${newIndex}_${targetCategory}`).toJSON());
 
     try {
         return interaction.message.edit({ embeds: [embed], components })
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'interaction create - help command' })
+        ErrorHandler.handle(err, { context: 'help-button-interaction' })
     }
 
 

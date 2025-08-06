@@ -15,7 +15,7 @@ export default new Command({
     async execute(message, args) {
         if (!args[0] && !message.reference?.messageId) return message.reply({ content: this.formatUsage() });
 
-        const targetUser = await getFirstMention(message, { referenceId: message.reference?.messageId }).catch(err => null);
+        const targetUser = await getFirstMention(message, { referenceId: message.reference?.messageId }).catch(() => null);
         if (!targetUser) return message.reply({ content: 'I could not find that user.' });
 
         try {

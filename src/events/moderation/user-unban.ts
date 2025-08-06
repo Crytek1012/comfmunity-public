@@ -29,6 +29,6 @@ export default new Event(GlobalNetworkEvents.UserUnban, async (user, authority, 
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'User Unban Event' })
+        ErrorHandler.handle(err, { context: 'user-unban-event' })
     }
 })

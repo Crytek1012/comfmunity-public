@@ -11,7 +11,7 @@ export const AssignableAuthorityLevels = ['moderator', 'admin'];
 
 export const AuthorityLevelMap = Object.fromEntries(
     Object.entries(AuthorityLevel)
-        .filter(([key, value]) => typeof value === "number")
+        .filter(([, value]) => typeof value === "number")
         .map(([key, value]) => [key.toLowerCase(), value])
 ) as Record<string, AuthorityLevel>;
 

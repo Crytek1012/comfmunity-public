@@ -28,7 +28,7 @@ export default new Event(Events.MessageDelete, async (message) => {
         await GlobalRelayQueue.addTask(message.id, GlobalRelayPriority.PostLowPriority, () => RelayHandler.deleteRelay({ messages: relayMessage.references }, connections));
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'message delete', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'message-delete-event', emitAlert: true });
     }
 
     // delete the message from db
@@ -39,6 +39,6 @@ export default new Event(Events.MessageDelete, async (message) => {
         await database.relays.delete(relayMessage.id);
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'message delete: database', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'message-delete-event', emitAlert: true });
     }
 });

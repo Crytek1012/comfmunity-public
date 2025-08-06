@@ -52,7 +52,7 @@ export default new Event(Events.MessageCreate, async (message) => {
             }
         }
         catch (err) {
-            ErrorHandler.handle(err, { context: 'message create', emitAlert: true });
+            ErrorHandler.handle(err, { context: 'message-create-event', emitAlert: true });
             return message.reply({ content: 'An error occured.' });
         }
     }

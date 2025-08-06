@@ -24,6 +24,6 @@ export default new Event(GlobalNetworkEvents.ConnectionEnable, async (connection
         modLogsChannel.send({ embeds: [embed] });
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'Connection Enabled Event', connection })
+        ErrorHandler.handle(err, { context: 'connection-enable-event', connection })
     }
 })

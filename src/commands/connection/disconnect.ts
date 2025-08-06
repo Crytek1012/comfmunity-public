@@ -19,9 +19,9 @@ export default new Command({
         if (!connection.isManageable(message.author.id)) return message.reply({ content: 'You cannot manage this connection.' });
 
         try {
-            const webhook = await connection.fetchWebhook().catch(err => null);
+            const webhook = await connection.fetchWebhook().catch(() => null);
             await database.connections.delete(message.guild.id);
-            if (webhook) webhook.delete().catch(err => null);
+            if (webhook) webhook.delete().catch(() => null);
 
             const executorAuthority = await database.authorities.fetch(message.author.id); // available in this context
             client.emit(GlobalNetworkEvents.ConnectionDelete, connection, executorAuthority!);

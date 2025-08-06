@@ -1,4 +1,4 @@
-import { EmbedBuilder } from "discord.js";
+import { APIMessageTopLevelComponent, EmbedBuilder } from "discord.js";
 import database from "../../core/database.js";
 import { Command } from "../../structures/command.js";
 import client from "../../core/client.js";
@@ -35,8 +35,8 @@ export default new Command({
         }
 
         // add additional navigation row if needed
-        const components: any[] = [getCategoriesMenu(allowedCategories, targetCategory)];
-        if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${0}_${targetCategory}`));
+        const components: APIMessageTopLevelComponent[] = [getCategoriesMenu(allowedCategories, targetCategory).toJSON()];
+        if (targetCategoryCommands && targetCategoryCommands.length > MAX_HELP_MENU_ITEMS) components.unshift(createNavigationRow('help', `${0}_${targetCategory}`).toJSON());
 
         return message.reply({ embeds: [embed], components })
 

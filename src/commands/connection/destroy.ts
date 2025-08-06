@@ -18,9 +18,9 @@ export default new Command({
             const connection = await database.connections.fetch(args[0]);
             if (!connection) return message.reply({ content: 'I could not find a connection with that ID.' });
 
-            const webhook = await connection.fetchWebhook().catch(err => null);
+            const webhook = await connection.fetchWebhook().catch(() => null);
             await database.connections.delete(connection.guildId);
-            if (webhook) webhook.delete().catch(err => null);
+            if (webhook) webhook.delete().catch(() => null);
 
             const executorAuthority = await database.authorities.fetch(message.author.id); // available in this context
             client.emit(GlobalNetworkEvents.ConnectionDestroy, connection, executorAuthority!);

@@ -26,8 +26,8 @@ export default new Command({
             await database.relays.delete(relayMessage.id);
 
             // delete origin
-            const origin = await relayMessage.fetchOrigin().catch(err => null);
-            if (origin) origin.delete().catch(err => null);
+            const origin = await relayMessage.fetchOrigin().catch(() => null);
+            if (origin) origin.delete().catch(() => null);
 
             const executorAuthority = await database.authorities.fetch(message.author.id); // will be available in this context.
             client.emit(GlobalNetworkEvents.RelayPurge, relayMessage, executorAuthority!)

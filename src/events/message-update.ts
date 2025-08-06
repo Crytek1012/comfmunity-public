@@ -45,7 +45,7 @@ export default new Event(Events.MessageUpdate, async (oldMessage, newMessage) =>
         await GlobalRelayQueue.addTask(newMessage.id, GlobalRelayPriority.PostLowPriority, () => RelayHandler.updateRelay(relayMessage.references, relayPayload, connections));
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'message update', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'message-update-event', emitAlert: true });
     }
 
     // update payload
@@ -61,7 +61,7 @@ export default new Event(Events.MessageUpdate, async (oldMessage, newMessage) =>
         client.emit(GlobalNetworkEvents.RelayUpdate, oldRelayMessage, relayMessage);
     }
     catch (err) {
-        ErrorHandler.handle(err, { context: 'message update : database', emitAlert: true });
+        ErrorHandler.handle(err, { context: 'message-update-event', emitAlert: true });
     }
 
 })
