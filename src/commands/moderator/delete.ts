@@ -14,7 +14,7 @@ export default new Command({
     requiredAuthority: AuthorityLevel.Moderator,
     requireConnection: true,
     position: 1,
-    async execute(message, args, connection) {
+    async execute(message) {
         if (!message.reference || !message.reference.messageId) return message.reply({ content: this.formatUsage() });
 
         const relayMessage = await database.relays.fetch(message.reference.messageId);
@@ -22,7 +22,7 @@ export default new Command({
 
         try {
             const connections = database.connections.cache.filter(c => c.isRelayEligible() && !c.isConnectionChannel(relayMessage.channelId) && relayMessage.references.has(c.channelId!));
-            if (connections.size > 0) await GlobalRelayQueue.addTask(relayMessage.id, GlobalRelayPriority.ModDelete, RelayHandler.deleteRelay({ messages: relayMessage.references }, connections));
+            if (connections.size > 0) await GlobalRelayQueue.addTask(relayMessage.id, GlobalRelayPriority.ModDelete, () => RelayHandler.deleteRelay({ messages: relayMessage.references }, connections));
             await database.relays.delete(relayMessage.id);
 
             // delete origin
