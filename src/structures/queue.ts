@@ -20,7 +20,7 @@ class Task<T = void> {
     reject!: (reason?: unknown) => void;
     readonly promise: Promise<T>;
 
-    constructor(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>, dependsOnTask?: string) {
+    constructor(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>) {
         this.id = id;
         this.priority = priority;
         this.operation = operation;
@@ -62,11 +62,10 @@ class Queue {
      * @param id 
      * @param priority 
      * @param operation 
-     * @param dependsOnTask 
      * @returns 
      */
-    async addTask<T>(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>, dependsOnTask?: string): Promise<T> {
-        const task = new Task(id, priority, operation, dependsOnTask);
+    async addTask<T>(id: string, priority: GlobalRelayPriority, operation: TaskOperation<T>): Promise<T> {
+        const task = new Task(id, priority, operation);
 
         // remove redundant tasks
         const shouldCancelTask = this.redundancyCleaner(task);
