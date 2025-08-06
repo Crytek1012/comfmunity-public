@@ -3,11 +3,8 @@ import { Event } from "../structures/event.js";
 import { config } from "../config.js";
 import client from "../core/client.js";
 import database from "../core/database.js";
-import RelayHandler from "../services/relay-handler.js";
-import { buildRelayFromMessage, getMessagePayload, validateMessage } from "../utils/message.js";
-import { GlobalRelayPriority, GlobalRelayQueue } from "../structures/queue.js";
-import { filter } from "../index.js";
 import { ErrorHandler } from "../structures/error-handler.js";
+import { handleRelayMessage } from "../services/handle-relay-message.js";
 
 export default new Event(Events.MessageCreate, async (message) => {
     if (!message.inGuild() || message.channel.type !== ChannelType.GuildText || message.author.bot || message.webhookId) return;
@@ -20,41 +17,7 @@ export default new Event(Events.MessageCreate, async (message) => {
 
     // It's a relay message
     if (!command) {
-        const connection = await database.connections.fetch(message.guildId, { fetch: false });
-        if (!connection || !connection.isEnabled() || !connection.isConnectionChannel(message.channel.id)) return;
-
-        // ignore banned users
-        const isBanned = await database.bans.fetch(message.author.id);
-        if (isBanned) return;
-
-        // validate content
-        if (filter.isProfane(message.content)) return message.reply({ content: 'This message contains blocked content.' })
-
-        // validate message
-        if (!validateMessage(message)) return message.reply({ content: 'This message contains content that is not currently supported.' });
-
-        const relayPayload = await buildRelayFromMessage(message);
-        const messagePayload = await getMessagePayload(message);
-
-        try {
-            const connections = database.connections.cache.filter(c => c.channelId !== message.channel.id && c.isRelayEligible());
-            if (connections.size === 0) return;
-
-            const result = await GlobalRelayQueue.addTask(message.id, GlobalRelayPriority.PostLowPriority, RelayHandler.relayMessage(relayPayload, connections));
-
-            await database.relays.create({
-                id: message.id,
-                guildId: message.guildId,
-                channelId: message.channelId,
-                authorId: message.author.id,
-                references: result.filter((r): r is { channelId: string; messageId: string } => r !== null),
-                payload: messagePayload
-            });
-
-        }
-        catch (err) {
-            ErrorHandler.handle(err, { context: 'message create', emitAlert: true });
-        }
+        return handleRelayMessage(message).catch(err => ErrorHandler.handle(err, { context: Events.MessageCreate }));
     }
     // it's a command
     else {
