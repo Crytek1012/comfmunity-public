@@ -8,11 +8,18 @@ import { filter } from "../index.js";
 import { ErrorHandler } from "../structures/error-handler.js";
 import { RelayMessage } from "../structures/relay.js";
 import client from "../core/client.js";
+import { handleRelayMessage } from "../services/handle-relay-message.js";
 
 export default new Event(Events.MessageUpdate, async (oldMessage, newMessage) => {
     if (!newMessage.inGuild() || newMessage.channel.type !== ChannelType.GuildText || newMessage.author.bot || newMessage.webhookId) return;
     // afaik, there is no reason to update for anything other than the content
     if (!oldMessage.partial && oldMessage.content === newMessage.content) return;
+
+    // If the queue contains an unprocessed POST task for this ID, remove the POST and directly replace it with this version of the message.
+    if (GlobalRelayQueue.hasPostTaskForId(newMessage.id)) {
+        GlobalRelayQueue.removeTasks(newMessage.id);
+        return handleRelayMessage(newMessage);
+    }
 
     const connection = await database.connections.fetch(newMessage.guildId, { fetch: false });
     if (!connection || !connection.isEnabled() || !connection.isConnectionChannel(newMessage.channel.id)) return;
@@ -35,7 +42,7 @@ export default new Event(Events.MessageUpdate, async (oldMessage, newMessage) =>
         const connections = database.connections.cache.filter(c => c.channelId !== newMessage.channel.id && c.isRelayEligible());
         if (connections.size === 0) return;
 
-        await GlobalRelayQueue.addTask(newMessage.id, GlobalRelayPriority.PostLowPriority, RelayHandler.updateRelay(relayMessage.references, relayPayload, connections));
+        await GlobalRelayQueue.addTask(newMessage.id, GlobalRelayPriority.PostLowPriority, () => RelayHandler.updateRelay(relayMessage.references, relayPayload, connections));
     }
     catch (err) {
         ErrorHandler.handle(err, { context: 'message update', emitAlert: true });
