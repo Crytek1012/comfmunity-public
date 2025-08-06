@@ -8,28 +8,28 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --env-file=.env dist/index.js",
+    "dev": "node --env-file=.dev.env dist/index.js",
     "build": "npx tsc && npm run dev",
     "start": "npx tsc && node --env-file=.env dist/index.js",
-    "lint": "eslint . --ext .js,.ts"
+    "lint": "npx eslint src/**"
   },
   "dependencies": {
     "discord.js": "^14.21.0",
     "dotenv": "^16.5.0",
     "heap-js": "^2.6.0",
-    "mongodb": "^6.16.0",
+    "mongodb": "^6.18.0",
     "node-profanity-filter": "^1.0.2",
     "timestring": "^7.0.0",
     "zod": "^3.25.28"
   },
   "devDependencies": {
-    "@eslint/js": "^9.28.0",
+    "@eslint/js": "^9.31.0",
     "@types/node": "^22.15.21",
     "@types/timestring": "^7.0.0",
     "discord-api-types": "^0.38.8",
-    "eslint": "^9.28.0",
-    "globals": "^16.2.0",
+    "eslint": "^9.31.0",
+    "globals": "^16.3.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.34.0"
+    "typescript-eslint": "^8.38.0"
   }
 }
